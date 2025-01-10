@@ -201,13 +201,13 @@ private:
 	template<int M> void b(u16 op) { C(4); pc = ea<0, M>(op, []{}); }
 	template<int M> void bl(u16 op) { C(7); u16 t = ea<0, M>(op, []{}); stR(11, pc); pc = t; }
 	template<int M> void blwp(u16 op) { C(7); bs(ea<0, M>(op, []{})); }
-	template<int M> void clr(u16 op) { C(5); ea<2, M>(op, [&] { return 0; }); }
-	template<int M> void seto(u16 op) { C(5); ea<2, M>(op, [&] { return 0xff; }); }
+	template<int M> void clr(u16 op) { C(5); ea<2, M>(op, []{ return 0; }); }
+	template<int M> void seto(u16 op) { C(5); ea<2, M>(op, []{ return 0xff; }); }
 	template<int M> void inc(u16 op) { C(6); ea<3, M>(op, [&](u16 v) { return finc(v + 1, v, 1); }); }
 	template<int M> void inct(u16 op) { C(6); ea<3, M>(op, [&](u16 v) { return finc(v + 2, v, 2); }); }
 	template<int M> void dec(u16 op) { C(6); ea<3, M>(op, [&](u16 v) { return fdec(v - 1, v, 1); }); }
 	template<int M> void dect(u16 op) { C(6); ea<3, M>(op, [&](u16 v) { return fdec(v - 2, v, 2); }); }
-	template<int M> void swpb(u16 op) { C(16); ea<3, M>(op, [&](u16 v) { return v << 8 | v >> 8; }); }
+	template<int M> void swpb(u16 op) { C(16); ea<3, M>(op, [](u16 v) { return v << 8 | v >> 8; }); }
 	template<int M> void neg(u16 op) { C(6); ea<3, M>(op, [&](u16 v) { return fneg(-v, v); }); }
 	template<int M> void inv(u16 op) { C(6); ea<3, M>(op, [&](u16 v) { return fmov(~v); }); }
 	template<int M> void abs(u16 op) { C(6); ea<3, M>(op, [&](s16 v) { u16 t = v >= 0 ? v : -v; return fabs(t, v); }); }

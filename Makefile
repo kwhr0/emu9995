@@ -1,4 +1,5 @@
 OPT = /opt/homebrew
+#OPT = /opt/local
 #OPT = /usr/local
 
 all:
