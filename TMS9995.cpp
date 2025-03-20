@@ -217,102 +217,32 @@ int TMS9995::Execute(int n) {
 	return idlef ? 0 : clock - n;
 }
 
+#define MSB_S		(S ? 0x80 : 0x8000)
+
 // ST0:Lgt ST1:Agt ST2:E ST3:C ST4:O ST5:P ST6:X ST12-15:I
+// s:(SA)or(W) d:(DA)orIOP
 template<int DM, int S> TMS9995::u16 TMS9995::fset(u16 r, u16 s, u16 d) {
-	if constexpr ((DM & 0xf) == LDEF) {
-		if (r) st |= ML;
-		else st &= ~ML;
-	}
-	if constexpr ((DM & 0xf) == LABS) {
-		if (s) st |= ML;
-		else st &= ~ML;
-	}
-	if constexpr ((DM & 0xf) == LC_) { // s:(SA)or(W) d:(DA)orIOP
-		if constexpr (S)
-			if (((s & ~d) | (~(s ^ d) & d - s)) & 0x80) st |= ML;
-			else st &= ~ML;
-		else if (((s & ~d) | (~(s ^ d) & d - s)) & MSB) st |= ML;
-		else st &= ~ML;
-	}
-	if constexpr ((DM & 0xf) == L32) {
-		if (r | s) st |= ML;
-		else st &= ~ML;
-	}
-	if constexpr ((DM & 0xf0) == ADEF) {
-		if (r && !(r & MSB)) st |= MA;
-		else st &= ~MA;
-	}
-	if constexpr ((DM & 0xf0) == AABS) {
-		if (s && !(s & MSB)) st |= MA;
-		else st &= ~MA;
-	}
-	if constexpr ((DM & 0xf0) == AC_) { // s:(SA)or(W) d:(DA)orIOP
-		if constexpr (S)
-			if (((~s & d & MSB) | (~(s ^ d) & d - s)) & 0x80) st |= MA;
-			else st &= ~MA;
-		else if (((~s & d & MSB) | (~(s ^ d) & d - s)) & MSB) st |= MA;
-		else st &= ~MA;
-	}
-	if constexpr ((DM & 0xf0) == A32) {
-		if (r | s && !(r & MSB)) st |= MA;
-		else st &= ~MA;
-	}
-	if constexpr ((DM & 0xf00) == EDEF) {
-		if (!r) st |= ME;
-		else st &= ~ME;
-	}
-	if constexpr ((DM & 0xf00) == EABS) {
-		if (!s) st |= ME;
-		else st &= ~ME;
-	}
-	if constexpr ((DM & 0xf00) == EC_) {
-		if (s == d) st |= ME;
-		else st &= ~ME;
-	}
-	if constexpr ((DM & 0xf00) == E32) {
-		if (!(r | s)) st |= ME;
-		else st &= ~ME;
-	}
-	if constexpr ((DM & 0xf000) == CADD) {
-		if (((s & d) | (~r & d) | (s & ~r)) & MSB) st |= MC;
-		else st &= ~MC;
-	}
-	if constexpr ((DM & 0xf000) == CSUB) {
-		if (((s & ~d) | (r & ~d) | (s & r)) & MSB) st |= MC;
-		else st &= ~MC;
-	}
-	if constexpr ((DM & 0xf000) == CSFT) {
-		if (d) st |= MC;
-		else st &= ~MC;
-	}
-	if constexpr ((DM & 0xf0000) == OADD) {
-		if (~(s ^ d) & (r ^ d) & MSB) st |= MO;
-		else st &= ~MO;
-	}
-	if constexpr ((DM & 0xf0000) == OSUB) {
-		if ((s ^ d) & (r ^ d) & MSB) st |= MO;
-		else st &= ~MO;
-	}
-	if constexpr ((DM & 0xf0000) == OINC) {
-		if (~s & r & MSB) st |= MO;
-		else st &= ~MO;
-	}
-	if constexpr ((DM & 0xf0000) == ODEC) {
-		if (s & ~r & MSB) st |= MO;
-		else st &= ~MO;
-	}
-	if constexpr ((DM & 0xf0000) == OABS) {
-		if (s == MSB) st |= MO;
-		else st &= ~MO;
-	}
-	if constexpr ((DM & 0xf00000) == PDEF) {
-		u8 t = r;
-		t ^= t >> 4;
-		t ^= t >> 2;
-		t ^= t >> 1;
-		if (t & 1) st |= MP;
-		else st &= ~MP;
-	}
+	if constexpr ((DM & 0xf) == LDEF) st = r ? st | ML : st & ~ML;
+	if constexpr ((DM & 0xf) == LABS) st = s ? st | ML : st & ~ML;
+	if constexpr ((DM & 0xf) == LC_) st = ((s & ~d) | (~(s ^ d) & d - s)) & MSB_S ? st | ML : st & ~ML;
+	if constexpr ((DM & 0xf) == L32) st = r | s ? st | ML : st & ~ML;
+	if constexpr ((DM & 0xf0) == ADEF) st = r && !(r & MSB) ? st | MA : st & ~MA;
+	if constexpr ((DM & 0xf0) == AABS) st = s && !(s & MSB) ? st | MA : st & ~MA;
+	if constexpr ((DM & 0xf0) == AC_) st = ((~s & d & MSB) | (~(s ^ d) & d - s)) & MSB_S ? st | MA : st & ~MA;
+	if constexpr ((DM & 0xf0) == A32) st = r | s && !(r & MSB) ? st | MA : st & ~MA;
+	if constexpr ((DM & 0xf00) == EDEF) st = !r ? st | ME : st & ~ME;
+	if constexpr ((DM & 0xf00) == EABS) st = !s ? st | ME : st & ~ME;
+	if constexpr ((DM & 0xf00) == EC_) st = s == d ? st | ME : st & ~ME;
+	if constexpr ((DM & 0xf00) == E32) st = !(r | s) ? st | ME : st & ~ME;
+	if constexpr ((DM & 0xf000) == CADD) st = ((s & d) | (~r & d) | (s & ~r)) & MSB ? st | MC : st & ~MC;
+	if constexpr ((DM & 0xf000) == CSUB) st = ((s & ~d) | (r & ~d) | (s & r)) & MSB ? st | MC : st & ~MC;
+	if constexpr ((DM & 0xf000) == CSFT) st = d ? st | MC : st & ~MC;
+	if constexpr ((DM & 0xf0000) == OADD) st = ~(s ^ d) & (r ^ d) & MSB ? st | MO : st & ~MO;
+	if constexpr ((DM & 0xf0000) == OSUB) st = (s ^ d) & (r ^ d) & MSB ? st | MO : st & ~MO;
+	if constexpr ((DM & 0xf0000) == OINC) st = ~s & r & MSB ? st | MO : st & ~MO;
+	if constexpr ((DM & 0xf0000) == ODEC) st = s & ~r & MSB ? st | MO : st & ~MO;
+	if constexpr ((DM & 0xf0000) == OABS) st = s == MSB ? st | MO : st & ~MO;
+	if constexpr ((DM & 0xf00000) == PDEF) { u8 t = r; t ^= t >> 4; t ^= t >> 2; t ^= t >> 1; st = t & 1 ? st | MP : st & ~MP; }
 	return r;
 }
 

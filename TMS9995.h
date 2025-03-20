@@ -27,7 +27,7 @@ class TMS9995 {
 		LL, LA, LE, LC, LO, LP, LX, LI = 12
 	};
 	enum {
-		MSB = 0x8000U,
+		MSB = 0x8000,
 		ML = MSB >> LL, MA = MSB >> LA, ME = MSB >> LE, MC = MSB >> LC, MO = MSB >> LO, MP = MSB >> LP, MX = MSB >> LX,
 		MI = 0xf
 	};
